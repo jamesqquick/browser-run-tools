@@ -1,0 +1,321 @@
+---
+import { actions } from "astro:actions";
+import Layout from "../layouts/Layout.astro";
+import "../styles/tool.css";
+
+const result = Astro.getActionResult(actions.measurePerformance);
+const inputUrl = result?.data?.url ?? "";
+
+function formatMs(ms: number | null): string {
+  if (ms === null) return "—";
+  if (ms >= 1000) return `${(ms / 1000).toFixed(2)}s`;
+  return `${ms}ms`;
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 B";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+type Rating = "good" | "needs-work" | "poor";
+
+function rateTtfb(ms: number | null): Rating {
+  if (ms === null) return "poor";
+  if (ms <= 200) return "good";
+  if (ms <= 500) return "needs-work";
+  return "poor";
+}
+
+function rateLcp(ms: number | null): Rating {
+  if (ms === null) return "poor";
+  if (ms <= 2500) return "good";
+  if (ms <= 4000) return "needs-work";
+  return "poor";
+}
+
+function rateDcl(ms: number | null): Rating {
+  if (ms === null) return "poor";
+  if (ms <= 1500) return "good";
+  if (ms <= 3000) return "needs-work";
+  return "poor";
+}
+
+function rateLoad(ms: number | null): Rating {
+  if (ms === null) return "poor";
+  if (ms <= 3000) return "good";
+  if (ms <= 6000) return "needs-work";
+  return "poor";
+}
+
+const byTypeOrder = ["script", "stylesheet", "image", "font", "fetch", "other"];
+---
+
+<Layout title="Performance Metrics - Cloudflare Browser Run Demo" maxWidth="720px">
+  <div class="hero">
+    <a class="badge" href="https://developers.cloudflare.com/browser-run/" target="_blank" rel="noopener noreferrer">Powered by Cloudflare Browser Run</a>
+    <h1>Performance Metrics</h1>
+    <p class="subtitle">
+      Measure page load timing, resource counts, and transfer sizes for any URL.
+    </p>
+  </div>
+
+  <form method="POST" action={actions.measurePerformance} id="perf-form">
+    <div class="input-group">
+      <label for="url-input" class="sr-only">Website URL</label>
+      <input
+        id="url-input"
+        type="url"
+        name="url"
+        placeholder="https://example.com"
+        required
+        value={inputUrl}
+        autocomplete="url"
+      />
+      <button type="submit" id="submit-btn">
+        <span class="btn-text">Measure</span>
+        <svg class="btn-spinner hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-7.07l-2.83 2.83M9.76 14.24l-2.83 2.83m12.14 0l-2.83-2.83M9.76 9.76L6.93 6.93"/>
+        </svg>
+      </button>
+    </div>
+  </form>
+
+  {result?.error && (
+    <div class="error-card">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="15" y1="9" x2="9" y2="15"/>
+        <line x1="9" y1="9" x2="15" y2="15"/>
+      </svg>
+      <p>Failed to measure performance. Make sure the URL is correct and the site is publicly accessible.</p>
+    </div>
+  )}
+
+  <div class="perf-card hidden" id="skeleton-card">
+    <div class="perf-header">
+      <div class="skeleton-text" style="width: 50%; height: 1rem;"></div>
+    </div>
+    <div class="metrics-grid">
+      {Array.from({ length: 4 }).map(() => (
+        <div class="metric-tile">
+          <div class="skeleton-text" style="width: 60%; height: 1.75rem;"></div>
+          <div class="skeleton-text" style="width: 40%; height: 0.75rem; margin-top: 0.5rem;"></div>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  {result?.data && (
+    <>
+      <div class="perf-card">
+        <div class="perf-header">
+          Performance for <a href={result.data.url} target="_blank" rel="noopener noreferrer">{result.data.url}</a>
+        </div>
+
+        <div class="metrics-grid">
+          <div class:list={["metric-tile", rateTtfb(result.data.ttfb)]}>
+            <div class="metric-value">{formatMs(result.data.ttfb)}</div>
+            <div class="metric-label">TTFB</div>
+            <div class="metric-threshold">Good ≤ 200ms</div>
+          </div>
+
+          <div class:list={["metric-tile", rateLcp(result.data.lcp)]}>
+            <div class="metric-value">{formatMs(result.data.lcp)}</div>
+            <div class="metric-label">LCP</div>
+            <div class="metric-threshold">Good ≤ 2.5s</div>
+          </div>
+
+          <div class:list={["metric-tile", rateDcl(result.data.domContentLoaded)]}>
+            <div class="metric-value">{formatMs(result.data.domContentLoaded)}</div>
+            <div class="metric-label">DOM Content Loaded</div>
+            <div class="metric-threshold">Good ≤ 1.5s</div>
+          </div>
+
+          <div class:list={["metric-tile", rateLoad(result.data.fullLoadTime)]}>
+            <div class="metric-value">{formatMs(result.data.fullLoadTime)}</div>
+            <div class="metric-label">Full Load</div>
+            <div class="metric-threshold">Good ≤ 3s</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="perf-card" style="margin-top: 1rem;">
+        <div class="perf-header">
+          Resources — {result.data.totalRequests} requests, {formatBytes(result.data.totalTransferSize)} transferred
+        </div>
+
+        <div class="resource-list">
+          {byTypeOrder
+            .filter((type) => result.data.byType[type])
+            .map((type) => {
+              const entry = result.data.byType[type];
+              const pct = result.data.totalTransferSize > 0
+                ? Math.round((entry.size / result.data.totalTransferSize) * 100)
+                : 0;
+              return (
+                <div class="resource-row">
+                  <span class="resource-type">{type}</span>
+                  <div class="resource-bar-track">
+                    <div class="resource-bar" style={`width: ${Math.max(pct, 2)}%;`} />
+                  </div>
+                  <span class="resource-count">{entry.count}</span>
+                  <span class="resource-size">{formatBytes(entry.size)}</span>
+                </div>
+              );
+            })}
+        </div>
+      </div>
+    </>
+  )}
+</Layout>
+
+<script>
+  const form = document.getElementById("perf-form") as HTMLFormElement;
+  const btn = document.getElementById("submit-btn") as HTMLButtonElement;
+  const btnText = btn.querySelector(".btn-text") as HTMLSpanElement;
+  const btnSpinner = btn.querySelector(".btn-spinner") as SVGElement;
+  const skeletonCard = document.getElementById("skeleton-card");
+
+  form.addEventListener("submit", () => {
+    btn.disabled = true;
+    btnText.textContent = "Measuring...";
+    btnSpinner.classList.remove("hidden");
+    skeletonCard?.classList.remove("hidden");
+  });
+</script>
+
+<style>
+  .perf-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .perf-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #334155;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.8rem;
+    color: #94a3b8;
+  }
+
+  .perf-header a {
+    color: #22c55e;
+    text-decoration: none;
+  }
+
+  .perf-header a:hover { text-decoration: underline; }
+
+  /* Metrics grid */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: #334155;
+  }
+
+  .metric-tile {
+    background: #1e293b;
+    padding: 1.25rem;
+    text-align: center;
+  }
+
+  .metric-value {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  .metric-label {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #94a3b8;
+    margin-bottom: 0.25rem;
+  }
+
+  .metric-threshold {
+    font-size: 0.65rem;
+    color: #475569;
+  }
+
+  /* Rating colors */
+  .metric-tile.good .metric-value { color: #22c55e; }
+  .metric-tile.needs-work .metric-value { color: #eab308; }
+  .metric-tile.poor .metric-value { color: #ef4444; }
+
+  /* Resource breakdown */
+  .resource-list {
+    padding: 0.5rem 0;
+  }
+
+  .resource-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 40px 80px;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.5rem 1.25rem;
+  }
+
+  .resource-type {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #f8fafc;
+    text-transform: capitalize;
+  }
+
+  .resource-bar-track {
+    height: 6px;
+    background: #0f172a;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .resource-bar {
+    height: 100%;
+    background: #22c55e;
+    border-radius: 3px;
+    transition: width 300ms ease;
+  }
+
+  .resource-count {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.7rem;
+    color: #94a3b8;
+    text-align: right;
+  }
+
+  .resource-size {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.7rem;
+    color: #64748b;
+    text-align: right;
+  }
+
+  /* Skeleton */
+  .skeleton-text {
+    height: 1rem;
+    border-radius: 6px;
+    background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+
+  @media (max-width: 480px) {
+    .metrics-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .resource-row {
+      grid-template-columns: 70px 1fr 60px;
+    }
+
+    .resource-count { display: none; }
+  }
+</style>
