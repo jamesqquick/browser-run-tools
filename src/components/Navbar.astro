@@ -1,62 +1,114 @@
 ---
-const currentPath = Astro.url.pathname;
+import { tools } from "../data/tools";
 
-const links = [
-  { href: "/screenshot", label: "Screenshot" },
-  { href: "/compare", label: "Responsive Preview" },
-  { href: "/og", label: "OG Preview" },
-];
+const currentPath = Astro.url.pathname;
 ---
 
 <nav class="navbar">
   <div class="navbar-inner">
     <a class="navbar-brand" href="/">Screenshot Tools</a>
 
+    <!-- Desktop: Tools dropdown -->
+    <div class="dropdown-wrapper" id="dropdown-wrapper">
+      <button
+        class="dropdown-trigger"
+        id="dropdown-trigger"
+        type="button"
+        aria-haspopup="true"
+        aria-expanded="false"
+      >
+        Tools
+        <svg class="dropdown-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+
+      <div class="dropdown-panel" id="dropdown-panel">
+        {tools.map((tool) => (
+          <a
+            class:list={["dropdown-link", { active: currentPath === tool.href }]}
+            href={tool.href}
+          >
+            <span class="dropdown-link-label">{tool.label}</span>
+            <span class="dropdown-link-desc">{tool.description}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+
+    <!-- Mobile: Hamburger -->
     <button class="hamburger" id="hamburger" type="button" aria-label="Toggle navigation" aria-expanded="false">
       <span class="hamburger-bar"></span>
       <span class="hamburger-bar"></span>
       <span class="hamburger-bar"></span>
     </button>
-
-    <div class="nav-links-desktop">
-      {links.map((link) => (
-        <a
-          class:list={["nav-link", { active: currentPath === link.href }]}
-          href={link.href}
-        >
-          {link.label}
-        </a>
-      ))}
-    </div>
   </div>
 </nav>
 
+<!-- Mobile: Full-screen overlay -->
 <div class="mobile-overlay" id="mobile-overlay">
   <div class="mobile-overlay-content">
-    {links.map((link, i) => (
+    {tools.map((tool, i) => (
       <a
-        class:list={["mobile-link", { active: currentPath === link.href }]}
-        href={link.href}
-        style={`transition-delay: ${80 + i * 60}ms`}
+        class:list={["mobile-link", { active: currentPath === tool.href }]}
+        href={tool.href}
+        style={`transition-delay: ${80 + i * 50}ms`}
       >
-        {link.label}
+        {tool.label}
       </a>
     ))}
   </div>
 </div>
 
 <script>
+  // ── Desktop dropdown ──
+  const trigger = document.getElementById("dropdown-trigger")!;
+  const panel = document.getElementById("dropdown-panel")!;
+  const wrapper = document.getElementById("dropdown-wrapper")!;
+
+  function openDropdown() {
+    trigger.setAttribute("aria-expanded", "true");
+    wrapper.classList.add("is-open");
+  }
+
+  function closeDropdown() {
+    trigger.setAttribute("aria-expanded", "false");
+    wrapper.classList.remove("is-open");
+  }
+
+  trigger.addEventListener("click", () => {
+    if (wrapper.classList.contains("is-open")) {
+      closeDropdown();
+    } else {
+      openDropdown();
+    }
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!wrapper.contains(e.target as Node)) {
+      closeDropdown();
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      closeDropdown();
+      closeOverlay();
+    }
+  });
+
+  // ── Mobile overlay ──
   const hamburger = document.getElementById("hamburger")!;
   const overlay = document.getElementById("mobile-overlay")!;
 
-  function open() {
+  function openOverlay() {
     hamburger.classList.add("is-open");
     hamburger.setAttribute("aria-expanded", "true");
     overlay.classList.add("is-open");
     document.body.style.overflow = "hidden";
   }
 
-  function close() {
+  function closeOverlay() {
     hamburger.classList.remove("is-open");
     hamburger.setAttribute("aria-expanded", "false");
     overlay.classList.remove("is-open");
@@ -65,20 +117,14 @@ const links = [
 
   hamburger.addEventListener("click", () => {
     if (overlay.classList.contains("is-open")) {
-      close();
+      closeOverlay();
     } else {
-      open();
+      openOverlay();
     }
   });
 
   overlay.querySelectorAll("a").forEach((link) => {
-    link.addEventListener("click", close);
-  });
-
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && overlay.classList.contains("is-open")) {
-      close();
-    }
+    link.addEventListener("click", closeOverlay);
   });
 </script>
 
@@ -121,32 +167,106 @@ const links = [
     color: #22c55e;
   }
 
-  /* ── Desktop links ── */
-  .nav-links-desktop {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
+  /* ── Desktop dropdown ── */
+  .dropdown-wrapper {
+    position: relative;
   }
 
-  .nav-link {
+  .dropdown-trigger {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
     font-family: "IBM Plex Sans", sans-serif;
     font-size: 0.875rem;
     font-weight: 500;
     color: #94a3b8;
-    text-decoration: none;
-    padding: 0.5rem 0.875rem;
+    background: none;
+    border: 1px solid transparent;
     border-radius: 8px;
-    transition: color 200ms, background 200ms;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    transition: color 200ms, background 200ms, border-color 200ms;
   }
 
-  .nav-link:hover {
+  .dropdown-trigger:hover {
     color: #f8fafc;
     background: rgba(248, 250, 252, 0.05);
   }
 
-  .nav-link.active {
-    color: #22c55e;
+  .dropdown-wrapper.is-open .dropdown-trigger {
+    color: #f8fafc;
+    background: rgba(248, 250, 252, 0.05);
+    border-color: #334155;
+  }
+
+  .dropdown-chevron {
+    transition: transform 200ms ease;
+  }
+
+  .dropdown-wrapper.is-open .dropdown-chevron {
+    transform: rotate(180deg);
+  }
+
+  /* ── Dropdown panel ── */
+  .dropdown-panel {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    width: 480px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 0.375rem;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-4px);
+    transition: opacity 200ms ease, visibility 200ms ease, transform 200ms ease;
+  }
+
+  .dropdown-wrapper.is-open .dropdown-panel {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  .dropdown-link {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: background 150ms;
+  }
+
+  .dropdown-link:hover {
+    background: rgba(248, 250, 252, 0.05);
+  }
+
+  .dropdown-link.active {
     background: rgba(34, 197, 94, 0.1);
+  }
+
+  .dropdown-link-label {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #f8fafc;
+  }
+
+  .dropdown-link.active .dropdown-link-label {
+    color: #22c55e;
+  }
+
+  .dropdown-link-desc {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 0.75rem;
+    color: #64748b;
+    line-height: 1.4;
   }
 
   /* ── Hamburger ── */
@@ -181,7 +301,6 @@ const links = [
     transform-origin: center;
   }
 
-  /* Animate to X */
   .hamburger.is-open .hamburger-bar:nth-child(1) {
     transform: translateY(7px) rotate(45deg);
   }
@@ -217,16 +336,16 @@ const links = [
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
   }
 
   .mobile-link {
     font-family: "JetBrains Mono", monospace;
-    font-size: 1.5rem;
+    font-size: 1.35rem;
     font-weight: 600;
     color: #94a3b8;
     text-decoration: none;
-    padding: 0.75rem 1.5rem;
+    padding: 0.625rem 1.5rem;
     border-radius: 12px;
     transition: color 200ms, background 200ms, transform 300ms ease, opacity 300ms ease;
     opacity: 0;
@@ -250,7 +369,7 @@ const links = [
 
   /* ── Responsive ── */
   @media (max-width: 768px) {
-    .nav-links-desktop {
+    .dropdown-wrapper {
       display: none;
     }
 
