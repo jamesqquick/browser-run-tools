@@ -1,0 +1,377 @@
+---
+import { actions } from "astro:actions";
+import Layout from "../layouts/Layout.astro";
+import "../styles/tool.css";
+
+const result = Astro.getActionResult(actions.auditMeta);
+const inputUrl = result?.data?.url ?? "";
+
+type CheckItem = { label: string; value: string | null; ok: boolean; detail?: string };
+
+const checks: CheckItem[] = result?.data
+  ? [
+      {
+        label: "Title",
+        value: result.data.title,
+        ok: !!result.data.title && result.data.titleLength > 0 && result.data.titleLength <= 60,
+        detail: result.data.title
+          ? `${result.data.titleLength} characters${result.data.titleLength > 60 ? " (recommended: ≤60)" : ""}`
+          : undefined,
+      },
+      {
+        label: "Meta Description",
+        value: result.data.description,
+        ok: !!result.data.description && result.data.descriptionLength > 0 && result.data.descriptionLength <= 160,
+        detail: result.data.description
+          ? `${result.data.descriptionLength} characters${result.data.descriptionLength > 160 ? " (recommended: ≤160)" : ""}`
+          : undefined,
+      },
+      { label: "Viewport", value: result.data.viewport, ok: !!result.data.viewport },
+      { label: "Charset", value: result.data.charset, ok: !!result.data.charset },
+      { label: "Language", value: result.data.lang, ok: !!result.data.lang },
+      { label: "Canonical URL", value: result.data.canonical, ok: !!result.data.canonical },
+      { label: "Favicon", value: result.data.favicon, ok: !!result.data.favicon },
+      { label: "Robots", value: result.data.robots, ok: true },
+      { label: "OG Title", value: result.data.ogTitle, ok: !!result.data.ogTitle },
+      { label: "OG Description", value: result.data.ogDescription, ok: !!result.data.ogDescription },
+      { label: "OG Image", value: result.data.ogImage, ok: !!result.data.ogImage },
+      { label: "OG Type", value: result.data.ogType, ok: !!result.data.ogType },
+      { label: "Twitter Card", value: result.data.twitterCard, ok: !!result.data.twitterCard },
+      { label: "Twitter Title", value: result.data.twitterTitle, ok: !!result.data.twitterTitle },
+      { label: "Twitter Description", value: result.data.twitterDescription, ok: !!result.data.twitterDescription },
+      { label: "Twitter Image", value: result.data.twitterImage, ok: !!result.data.twitterImage },
+      {
+        label: "Structured Data (JSON-LD)",
+        value: result.data.hasStructuredData ? `${result.data.structuredDataCount} block(s) found` : null,
+        ok: result.data.hasStructuredData,
+      },
+    ]
+  : [];
+
+const passCount = checks.filter((c) => c.ok && c.value).length;
+const totalChecks = checks.length;
+---
+
+<Layout title="Meta Tag Audit - Cloudflare Browser Run Demo" maxWidth="720px">
+  <div class="hero">
+    <a class="badge" href="https://developers.cloudflare.com/browser-run/" target="_blank" rel="noopener noreferrer">Powered by Cloudflare Browser Run</a>
+    <h1>Meta Tag Audit</h1>
+    <p class="subtitle">
+      Inspect the title, meta tags, Open Graph data, Twitter cards, and other SEO-relevant metadata on any page.
+    </p>
+  </div>
+
+  <form method="POST" action={actions.auditMeta} id="meta-form">
+    <div class="input-group">
+      <label for="url-input" class="sr-only">Website URL</label>
+      <input
+        id="url-input"
+        type="url"
+        name="url"
+        placeholder="https://example.com"
+        required
+        value={inputUrl}
+        autocomplete="url"
+      />
+      <button type="submit" id="submit-btn">
+        <span class="btn-text">Audit Meta</span>
+        <svg class="btn-spinner hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-7.07l-2.83 2.83M9.76 14.24l-2.83 2.83m12.14 0l-2.83-2.83M9.76 9.76L6.93 6.93"/>
+        </svg>
+      </button>
+    </div>
+  </form>
+
+  {result?.error && (
+    <div class="error-card">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="15" y1="9" x2="9" y2="15"/>
+        <line x1="9" y1="9" x2="15" y2="15"/>
+      </svg>
+      <p>Failed to audit meta tags. Make sure the URL is correct and the site is publicly accessible.</p>
+    </div>
+  )}
+
+  <div class="audit-card hidden" id="skeleton-card">
+    <div class="audit-header">
+      <div class="skeleton-text" style="width: 40%; height: 1.5rem;"></div>
+      <div class="skeleton-text" style="width: 60%; height: 1rem;"></div>
+    </div>
+    {Array.from({ length: 8 }).map(() => (
+      <div class="audit-row">
+        <div class="skeleton-text" style="width: 30%; height: 0.9rem;"></div>
+        <div class="skeleton-text" style="width: 50%; height: 0.9rem;"></div>
+      </div>
+    ))}
+  </div>
+
+  {result?.data && (
+    <div class="audit-card">
+      <div class="audit-header">
+        <div class="audit-score">
+          <span class="score-number">{passCount}</span>
+          <span class="score-sep">/</span>
+          <span class="score-total">{totalChecks}</span>
+        </div>
+        <div class="audit-score-label">checks passed for <a href={result.data.url} target="_blank" rel="noopener noreferrer">{result.data.url}</a></div>
+      </div>
+
+      <div class="audit-section-label">Essentials</div>
+      {checks.slice(0, 7).map((check) => (
+        <div class="audit-row">
+          <div class="audit-status">
+            {check.value ? (
+              check.ok ? (
+                <svg class="icon-pass" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              ) : (
+                <svg class="icon-warn" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+              )
+            ) : (
+              <svg class="icon-fail" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            )}
+          </div>
+          <div class="audit-label">{check.label}</div>
+          <div class="audit-value">
+            {check.value ? (
+              <span class="value-text">{check.value}</span>
+            ) : (
+              <span class="value-missing">Missing</span>
+            )}
+            {check.detail && <span class="value-detail">{check.detail}</span>}
+          </div>
+        </div>
+      ))}
+
+      <div class="audit-section-label">Open Graph</div>
+      {checks.slice(7, 12).map((check) => (
+        <div class="audit-row">
+          <div class="audit-status">
+            {check.value ? (
+              <svg class="icon-pass" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            ) : (
+              <svg class="icon-fail" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            )}
+          </div>
+          <div class="audit-label">{check.label}</div>
+          <div class="audit-value">
+            {check.value ? (
+              <span class="value-text">{check.value}</span>
+            ) : (
+              <span class="value-missing">Missing</span>
+            )}
+          </div>
+        </div>
+      ))}
+
+      <div class="audit-section-label">Twitter Cards</div>
+      {checks.slice(12, 16).map((check) => (
+        <div class="audit-row">
+          <div class="audit-status">
+            {check.value ? (
+              <svg class="icon-pass" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            ) : (
+              <svg class="icon-fail" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            )}
+          </div>
+          <div class="audit-label">{check.label}</div>
+          <div class="audit-value">
+            {check.value ? (
+              <span class="value-text">{check.value}</span>
+            ) : (
+              <span class="value-missing">Missing</span>
+            )}
+          </div>
+        </div>
+      ))}
+
+      <div class="audit-section-label">Structured Data</div>
+      {checks.slice(16).map((check) => (
+        <div class="audit-row">
+          <div class="audit-status">
+            {check.value ? (
+              <svg class="icon-pass" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            ) : (
+              <svg class="icon-fail" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            )}
+          </div>
+          <div class="audit-label">{check.label}</div>
+          <div class="audit-value">
+            {check.value ? (
+              <span class="value-text">{check.value}</span>
+            ) : (
+              <span class="value-missing">Not found</span>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+</Layout>
+
+<script>
+  const form = document.getElementById("meta-form") as HTMLFormElement;
+  const btn = document.getElementById("submit-btn") as HTMLButtonElement;
+  const btnText = btn.querySelector(".btn-text") as HTMLSpanElement;
+  const btnSpinner = btn.querySelector(".btn-spinner") as SVGElement;
+  const skeletonCard = document.getElementById("skeleton-card");
+
+  form.addEventListener("submit", () => {
+    btn.disabled = true;
+    btnText.textContent = "Auditing...";
+    btnSpinner.classList.remove("hidden");
+    skeletonCard?.classList.remove("hidden");
+  });
+</script>
+
+<style>
+  /* Audit card */
+  .audit-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .audit-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.25rem;
+    border-bottom: 1px solid #334155;
+  }
+
+  .audit-score {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #22c55e;
+    white-space: nowrap;
+  }
+
+  .score-sep { color: #475569; margin: 0 0.1rem; }
+  .score-total { color: #94a3b8; }
+
+  .audit-score-label {
+    font-size: 0.85rem;
+    color: #94a3b8;
+  }
+
+  .audit-score-label a {
+    color: #22c55e;
+    text-decoration: none;
+  }
+
+  .audit-score-label a:hover { text-decoration: underline; }
+
+  .audit-section-label {
+    padding: 0.75rem 1.25rem 0.5rem;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    border-top: 1px solid #334155;
+  }
+
+  .audit-row {
+    display: grid;
+    grid-template-columns: 24px 140px 1fr;
+    gap: 0.75rem;
+    align-items: start;
+    padding: 0.625rem 1.25rem;
+    border-top: 1px solid rgba(51, 65, 85, 0.4);
+  }
+
+  .audit-status {
+    display: flex;
+    align-items: center;
+    padding-top: 1px;
+  }
+
+  .icon-pass { color: #22c55e; }
+  .icon-warn { color: #eab308; }
+  .icon-fail { color: #64748b; }
+
+  .audit-label {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 0.825rem;
+    font-weight: 500;
+    color: #f8fafc;
+    padding-top: 1px;
+  }
+
+  .audit-value {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+  }
+
+  .value-text {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.75rem;
+    color: #94a3b8;
+    line-height: 1.5;
+    word-break: break-all;
+  }
+
+  .value-missing {
+    font-size: 0.75rem;
+    color: #475569;
+    font-style: italic;
+  }
+
+  .value-detail {
+    font-size: 0.7rem;
+    color: #64748b;
+  }
+
+  /* Skeleton overrides */
+  .skeleton-text {
+    height: 1rem;
+    border-radius: 6px;
+    background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+
+  @media (max-width: 640px) {
+    .audit-row {
+      grid-template-columns: 24px 1fr;
+    }
+
+    .audit-label {
+      grid-column: 2;
+    }
+
+    .audit-value {
+      grid-column: 2;
+    }
+  }
+</style>
