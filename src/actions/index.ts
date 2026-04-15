@@ -24,6 +24,29 @@ export const server = {
     },
   }),
 
+  takeFullPageScreenshot: defineAction({
+    accept: 'form',
+    input: z.object({
+      url: z.url('Please enter a valid URL (e.g. https://example.com)'),
+    }),
+    handler: async ({ url }) => {
+      const browser = await puppeteer.launch(env.MYBROWSER);
+      try {
+        const page = await browser.newPage();
+        await page.setViewport({ width: 1280, height: 720 });
+        await page.goto(url, { waitUntil: 'networkidle0', timeout: 30_000 });
+        const screenshot = (await page.screenshot({
+          type: 'png',
+          fullPage: true,
+        })) as Buffer;
+        const base64 = screenshot.toString('base64');
+        return { image: base64, url };
+      } finally {
+        await browser.close();
+      }
+    },
+  }),
+
   compareViewports: defineAction({
     accept: 'form',
     input: z.object({
