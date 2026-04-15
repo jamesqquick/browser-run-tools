@@ -1,0 +1,146 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Screenshot Tools - Cloudflare Browser Run Demo" maxWidth="900px">
+  <div class="hero">
+    <a class="badge" href="https://developers.cloudflare.com/browser-run/" target="_blank" rel="noopener noreferrer">Powered by Cloudflare Browser Run</a>
+    <h1>Screenshot Tools</h1>
+    <p class="subtitle">
+      A collection of browser-based tools powered by headless Chrome running on Cloudflare's global network. Pick a tool to get started.
+    </p>
+  </div>
+
+  <div class="tools-grid">
+    <a class="tool-card" href="/screenshot">
+      <div class="tool-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+      </div>
+      <h2>Screenshot</h2>
+      <p>Capture a full screenshot of any webpage at 1280x720.</p>
+      <span class="tool-cta">
+        Try it
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14"/>
+          <polyline points="12 5 19 12 12 19"/>
+        </svg>
+      </span>
+    </a>
+
+    <a class="tool-card" href="/compare">
+      <div class="tool-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+          <line x1="12" y1="18" x2="12" y2="18"/>
+        </svg>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </div>
+      <h2>Responsive Preview</h2>
+      <p>Compare mobile and desktop views of any site side by side.</p>
+      <span class="tool-cta">
+        Try it
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14"/>
+          <polyline points="12 5 19 12 12 19"/>
+        </svg>
+      </span>
+    </a>
+
+    <a class="tool-card" href="/og">
+      <div class="tool-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+          <polyline points="16 6 12 2 8 6"/>
+          <line x1="12" y1="2" x2="12" y2="15"/>
+        </svg>
+      </div>
+      <h2>OG Preview</h2>
+      <p>Extract Open Graph title, description, and image from any URL.</p>
+      <span class="tool-cta">
+        Try it
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14"/>
+          <polyline points="12 5 19 12 12 19"/>
+        </svg>
+      </span>
+    </a>
+  </div>
+</Layout>
+
+<style>
+  .hero { margin-bottom: 3rem; }
+
+  .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+  }
+
+  .tool-card {
+    display: flex;
+    flex-direction: column;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 1.75rem;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 200ms, transform 200ms;
+    cursor: pointer;
+  }
+
+  .tool-card:hover {
+    border-color: #22c55e;
+    transform: translateY(-2px);
+  }
+
+  .tool-icon {
+    display: flex;
+    gap: 0.25rem;
+    color: #22c55e;
+    margin-bottom: 1.25rem;
+  }
+
+  .tool-card h2 {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .tool-card p {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    flex: 1;
+    margin-bottom: 1.25rem;
+  }
+
+  .tool-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #22c55e;
+    transition: gap 200ms;
+  }
+
+  .tool-card:hover .tool-cta {
+    gap: 0.625rem;
+  }
+
+  @media (max-width: 768px) {
+    .tools-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

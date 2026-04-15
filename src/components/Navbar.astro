@@ -1,0 +1,261 @@
+---
+const currentPath = Astro.url.pathname;
+
+const links = [
+  { href: "/screenshot", label: "Screenshot" },
+  { href: "/compare", label: "Responsive Preview" },
+  { href: "/og", label: "OG Preview" },
+];
+---
+
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a class="navbar-brand" href="/">Screenshot Tools</a>
+
+    <button class="hamburger" id="hamburger" type="button" aria-label="Toggle navigation" aria-expanded="false">
+      <span class="hamburger-bar"></span>
+      <span class="hamburger-bar"></span>
+      <span class="hamburger-bar"></span>
+    </button>
+
+    <div class="nav-links-desktop">
+      {links.map((link) => (
+        <a
+          class:list={["nav-link", { active: currentPath === link.href }]}
+          href={link.href}
+        >
+          {link.label}
+        </a>
+      ))}
+    </div>
+  </div>
+</nav>
+
+<div class="mobile-overlay" id="mobile-overlay">
+  <div class="mobile-overlay-content">
+    {links.map((link, i) => (
+      <a
+        class:list={["mobile-link", { active: currentPath === link.href }]}
+        href={link.href}
+        style={`transition-delay: ${80 + i * 60}ms`}
+      >
+        {link.label}
+      </a>
+    ))}
+  </div>
+</div>
+
+<script>
+  const hamburger = document.getElementById("hamburger")!;
+  const overlay = document.getElementById("mobile-overlay")!;
+
+  function open() {
+    hamburger.classList.add("is-open");
+    hamburger.setAttribute("aria-expanded", "true");
+    overlay.classList.add("is-open");
+    document.body.style.overflow = "hidden";
+  }
+
+  function close() {
+    hamburger.classList.remove("is-open");
+    hamburger.setAttribute("aria-expanded", "false");
+    overlay.classList.remove("is-open");
+    document.body.style.overflow = "";
+  }
+
+  hamburger.addEventListener("click", () => {
+    if (overlay.classList.contains("is-open")) {
+      close();
+    } else {
+      open();
+    }
+  });
+
+  overlay.querySelectorAll("a").forEach((link) => {
+    link.addEventListener("click", close);
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && overlay.classList.contains("is-open")) {
+      close();
+    }
+  });
+</script>
+
+<style>
+  /* ── Navbar bar ── */
+  .navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid #1e293b;
+  }
+
+  .navbar-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5rem;
+    height: 64px;
+  }
+
+  /* ── Brand ── */
+  .navbar-brand {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #f8fafc;
+    text-decoration: none;
+    letter-spacing: -0.02em;
+    transition: color 200ms;
+  }
+
+  .navbar-brand:hover {
+    color: #22c55e;
+  }
+
+  /* ── Desktop links ── */
+  .nav-links-desktop {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .nav-link {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #94a3b8;
+    text-decoration: none;
+    padding: 0.5rem 0.875rem;
+    border-radius: 8px;
+    transition: color 200ms, background 200ms;
+  }
+
+  .nav-link:hover {
+    color: #f8fafc;
+    background: rgba(248, 250, 252, 0.05);
+  }
+
+  .nav-link.active {
+    color: #22c55e;
+    background: rgba(34, 197, 94, 0.1);
+  }
+
+  /* ── Hamburger ── */
+  .hamburger {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 36px;
+    height: 36px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 8px;
+    transition: background 200ms;
+    z-index: 110;
+    position: relative;
+  }
+
+  .hamburger:hover {
+    background: rgba(248, 250, 252, 0.05);
+  }
+
+  .hamburger-bar {
+    display: block;
+    width: 100%;
+    height: 2px;
+    background: #f8fafc;
+    border-radius: 2px;
+    transition: transform 300ms ease, opacity 200ms ease;
+    transform-origin: center;
+  }
+
+  /* Animate to X */
+  .hamburger.is-open .hamburger-bar:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+  }
+
+  .hamburger.is-open .hamburger-bar:nth-child(2) {
+    opacity: 0;
+  }
+
+  .hamburger.is-open .hamburger-bar:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+  }
+
+  /* ── Mobile overlay ── */
+  .mobile-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+    background: rgba(15, 23, 42, 0.98);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 300ms ease, visibility 300ms ease;
+  }
+
+  .mobile-overlay.is-open {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .mobile-overlay-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .mobile-link {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-decoration: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    transition: color 200ms, background 200ms, transform 300ms ease, opacity 300ms ease;
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  .mobile-overlay.is-open .mobile-link {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .mobile-link:hover {
+    color: #f8fafc;
+    background: rgba(248, 250, 252, 0.05);
+  }
+
+  .mobile-link.active {
+    color: #22c55e;
+    background: rgba(34, 197, 94, 0.1);
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .nav-links-desktop {
+      display: none;
+    }
+
+    .hamburger {
+      display: flex;
+    }
+  }
+</style>

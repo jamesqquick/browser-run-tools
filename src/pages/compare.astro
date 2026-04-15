@@ -1,0 +1,168 @@
+---
+import { actions } from "astro:actions";
+import Layout from "../layouts/Layout.astro";
+import "../styles/tool.css";
+
+const result = Astro.getActionResult(actions.compareViewports);
+const inputUrl = result?.data?.url ?? "";
+---
+
+<Layout title="Responsive Preview - Cloudflare Browser Run Demo">
+  <div class="hero">
+    <a class="badge" href="https://developers.cloudflare.com/browser-run/" target="_blank" rel="noopener noreferrer">Powered by Cloudflare Browser Run</a>
+    <h1>Responsive Preview</h1>
+    <p class="subtitle">
+      See how any website looks on mobile and desktop side by side — captured live with a headless browser on Cloudflare's global network.
+    </p>
+  </div>
+
+  <form method="POST" action={actions.compareViewports} id="compare-form">
+    <div class="input-group">
+      <label for="url-input" class="sr-only">Website URL</label>
+      <input
+        id="url-input"
+        type="url"
+        name="url"
+        placeholder="https://example.com"
+        required
+        value={inputUrl}
+        autocomplete="url"
+      />
+      <button type="submit" id="submit-btn">
+        <span class="btn-text">Compare Viewports</span>
+        <svg class="btn-spinner hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-7.07l-2.83 2.83M9.76 14.24l-2.83 2.83m12.14 0l-2.83-2.83M9.76 9.76L6.93 6.93"/>
+        </svg>
+      </button>
+    </div>
+  </form>
+
+  {result?.error && (
+    <div class="error-card">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="15" y1="9" x2="9" y2="15"/>
+        <line x1="9" y1="9" x2="15" y2="15"/>
+      </svg>
+      <p>Failed to capture screenshots. Make sure the URL is correct and the site is publicly accessible.</p>
+    </div>
+  )}
+
+  <div class="comparison-grid hidden" id="skeleton-grid">
+    <div class="result-card">
+      <div class="result-header">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+          <line x1="12" y1="18" x2="12" y2="18"/>
+        </svg>
+        <span>Mobile — 375px</span>
+      </div>
+      <div class="result-image"><div class="skeleton skeleton-mobile"></div></div>
+    </div>
+    <div class="result-card">
+      <div class="result-header">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+        <span>Desktop — 1280px</span>
+      </div>
+      <div class="result-image"><div class="skeleton"></div></div>
+    </div>
+  </div>
+
+  {result?.data && (
+    <div class="comparison-grid">
+      <div class="result-card">
+        <div class="result-header">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+            <line x1="12" y1="18" x2="12" y2="18"/>
+          </svg>
+          <span>Mobile — 375px</span>
+        </div>
+        <div class="result-image">
+          <div class="skeleton skeleton-mobile" id="mobile-skeleton"></div>
+          <img
+            class="hidden"
+            id="mobile-img"
+            src={`data:image/png;base64,${result.data.mobile}`}
+            alt={`Mobile screenshot of ${result.data.url}`}
+          />
+        </div>
+      </div>
+      <div class="result-card">
+        <div class="result-header">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+            <line x1="8" y1="21" x2="16" y2="21"/>
+            <line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+          <span>Desktop — 1280px</span>
+        </div>
+        <div class="result-image">
+          <div class="skeleton" id="desktop-skeleton"></div>
+          <img
+            class="hidden"
+            id="desktop-img"
+            src={`data:image/png;base64,${result.data.desktop}`}
+            alt={`Desktop screenshot of ${result.data.url}`}
+          />
+        </div>
+      </div>
+    </div>
+  )}
+</Layout>
+
+<script>
+  const form = document.getElementById("compare-form") as HTMLFormElement;
+  const btn = document.getElementById("submit-btn") as HTMLButtonElement;
+  const btnText = btn.querySelector(".btn-text") as HTMLSpanElement;
+  const btnSpinner = btn.querySelector(".btn-spinner") as SVGElement;
+  const skeletonGrid = document.getElementById("skeleton-grid");
+
+  form.addEventListener("submit", () => {
+    btn.disabled = true;
+    btnText.textContent = "Capturing...";
+    btnSpinner.classList.remove("hidden");
+    skeletonGrid?.classList.remove("hidden");
+  });
+
+  function revealImage(imgId: string, skeletonId: string) {
+    const img = document.getElementById(imgId) as HTMLImageElement | null;
+    const skeleton = document.getElementById(skeletonId);
+    if (!img) return;
+    const reveal = () => {
+      skeleton?.remove();
+      img.classList.remove("hidden");
+    };
+    if (img.complete) {
+      reveal();
+    } else {
+      img.addEventListener("load", reveal);
+      img.addEventListener("error", reveal);
+    }
+  }
+
+  revealImage("mobile-img", "mobile-skeleton");
+  revealImage("desktop-img", "desktop-skeleton");
+</script>
+
+<style>
+  .subtitle { max-width: 600px; }
+  form { max-width: 720px; margin-left: auto; margin-right: auto; }
+  .error-card { max-width: 720px; margin-left: auto; margin-right: auto; }
+
+  .comparison-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  .skeleton-mobile { aspect-ratio: 375/812; }
+
+  @media (max-width: 768px) {
+    .comparison-grid { grid-template-columns: 1fr; }
+  }
+</style>
