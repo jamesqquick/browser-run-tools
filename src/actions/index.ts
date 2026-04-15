@@ -383,6 +383,90 @@ export const server = {
     },
   }),
 
+  checkLinks: defineAction({
+    accept: 'form',
+    input: z.object({
+      url: z.url('Please enter a valid URL (e.g. https://example.com)'),
+    }),
+    handler: async ({ url }) => {
+      const browser = await puppeteer.launch(env.MYBROWSER);
+      try {
+        const page = await browser.newPage();
+        await page.setViewport({ width: 1280, height: 720 });
+        await page.goto(url, { waitUntil: 'networkidle0', timeout: 30_000 });
+
+        const rawLinks = await page.evaluate(() => {
+          const links: { href: string; text: string }[] = [];
+          const seen = new Set<string>();
+          document.querySelectorAll('a[href]').forEach((el) => {
+            const href = (el as HTMLAnchorElement).href;
+            if (!href || href.startsWith('javascript:') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+            if (seen.has(href)) return;
+            seen.add(href);
+            const text = (el.textContent || '').trim().slice(0, 80) || '(no text)';
+            links.push({ href, text });
+          });
+          return links;
+        });
+
+        // Limit to 50 links to avoid timeout
+        const linksToCheck = rawLinks.slice(0, 50);
+        const baseHost = new URL(url).hostname;
+
+        const results = await Promise.all(
+          linksToCheck.map(async (link) => {
+            let status = 0;
+            let ok = false;
+            const isExternal = (() => {
+              try {
+                return new URL(link.href).hostname !== baseHost;
+              } catch {
+                return true;
+              }
+            })();
+
+            try {
+              const res = await fetch(link.href, {
+                method: 'HEAD',
+                redirect: 'follow',
+                signal: AbortSignal.timeout(5000),
+              });
+              status = res.status;
+              ok = res.ok;
+            } catch {
+              status = 0;
+              ok = false;
+            }
+
+            return {
+              href: link.href,
+              text: link.text,
+              status,
+              ok,
+              isExternal,
+            };
+          }),
+        );
+
+        const totalLinks = rawLinks.length;
+        const checkedCount = results.length;
+        const brokenCount = results.filter((r) => !r.ok).length;
+        const externalCount = results.filter((r) => r.isExternal).length;
+
+        return {
+          links: results,
+          totalLinks,
+          checkedCount,
+          brokenCount,
+          externalCount,
+          url,
+        };
+      } finally {
+        await browser.close();
+      }
+    },
+  }),
+
   extractFonts: defineAction({
     accept: 'form',
     input: z.object({

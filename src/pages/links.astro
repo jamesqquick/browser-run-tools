@@ -1,0 +1,262 @@
+---
+import { actions } from "astro:actions";
+import Layout from "../layouts/Layout.astro";
+import "../styles/tool.css";
+
+const result = Astro.getActionResult(actions.checkLinks);
+const inputUrl = result?.data?.url ?? "";
+---
+
+<Layout title="Link Checker - Cloudflare Browser Run Demo" maxWidth="900px">
+  <div class="hero">
+    <a class="badge" href="https://developers.cloudflare.com/browser-run/" target="_blank" rel="noopener noreferrer">Powered by Cloudflare Browser Run</a>
+    <h1>Link Checker</h1>
+    <p class="subtitle">
+      Find and validate every link on a page — identify broken links, external links, and redirects.
+    </p>
+  </div>
+
+  <form method="POST" action={actions.checkLinks} id="links-form">
+    <div class="input-group">
+      <label for="url-input" class="sr-only">Website URL</label>
+      <input
+        id="url-input"
+        type="url"
+        name="url"
+        placeholder="https://example.com"
+        required
+        value={inputUrl}
+        autocomplete="url"
+      />
+      <button type="submit" id="submit-btn">
+        <span class="btn-text">Check Links</span>
+        <svg class="btn-spinner hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-7.07l-2.83 2.83M9.76 14.24l-2.83 2.83m12.14 0l-2.83-2.83M9.76 9.76L6.93 6.93"/>
+        </svg>
+      </button>
+    </div>
+  </form>
+
+  {result?.error && (
+    <div class="error-card">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="15" y1="9" x2="9" y2="15"/>
+        <line x1="9" y1="9" x2="15" y2="15"/>
+      </svg>
+      <p>Failed to check links. Make sure the URL is correct and the site is publicly accessible.</p>
+    </div>
+  )}
+
+  <div class="links-card hidden" id="skeleton-card">
+    <div class="links-header">
+      <div class="skeleton-text" style="width: 60%; height: 1rem;"></div>
+    </div>
+    {Array.from({ length: 6 }).map(() => (
+      <div class="link-row">
+        <div class="skeleton-text" style="width: 20%; height: 0.85rem;"></div>
+        <div class="skeleton-text" style="width: 70%; height: 0.85rem;"></div>
+        <div class="skeleton-text" style="width: 10%; height: 0.85rem;"></div>
+      </div>
+    ))}
+  </div>
+
+  {result?.data && (
+    <div class="links-card">
+      <div class="links-header">
+        <div class="stats">
+          <span class="stat">
+            <span class="stat-num">{result.data.totalLinks}</span> total
+          </span>
+          <span class="stat-divider">|</span>
+          <span class="stat">
+            <span class="stat-num checked">{result.data.checkedCount}</span> checked
+          </span>
+          <span class="stat-divider">|</span>
+          <span class="stat">
+            <span class:list={["stat-num", { broken: result.data.brokenCount > 0 }]}>{result.data.brokenCount}</span> broken
+          </span>
+          <span class="stat-divider">|</span>
+          <span class="stat">
+            <span class="stat-num external">{result.data.externalCount}</span> external
+          </span>
+        </div>
+        {result.data.totalLinks > result.data.checkedCount && (
+          <div class="links-note">Showing first {result.data.checkedCount} of {result.data.totalLinks} links</div>
+        )}
+      </div>
+
+      <div class="links-table-header">
+        <span class="col-status">Status</span>
+        <span class="col-text">Link Text</span>
+        <span class="col-url">URL</span>
+        <span class="col-type">Type</span>
+      </div>
+
+      {result.data.links.map((link) => (
+        <div class:list={["link-row", { "is-broken": !link.ok }]}>
+          <span class:list={["col-status", "status-badge", { ok: link.ok, fail: !link.ok }]}>
+            {link.status || "ERR"}
+          </span>
+          <span class="col-text link-text">{link.text}</span>
+          <a class="col-url link-href" href={link.href} target="_blank" rel="noopener noreferrer">{link.href}</a>
+          <span class:list={["col-type", "type-badge", { external: link.isExternal }]}>
+            {link.isExternal ? "ext" : "int"}
+          </span>
+        </div>
+      ))}
+    </div>
+  )}
+</Layout>
+
+<script>
+  const form = document.getElementById("links-form") as HTMLFormElement;
+  const btn = document.getElementById("submit-btn") as HTMLButtonElement;
+  const btnText = btn.querySelector(".btn-text") as HTMLSpanElement;
+  const btnSpinner = btn.querySelector(".btn-spinner") as SVGElement;
+  const skeletonCard = document.getElementById("skeleton-card");
+
+  form.addEventListener("submit", () => {
+    btn.disabled = true;
+    btnText.textContent = "Checking...";
+    btnSpinner.classList.remove("hidden");
+    skeletonCard?.classList.remove("hidden");
+  });
+</script>
+
+<style>
+  form { max-width: 720px; margin-left: auto; margin-right: auto; }
+  .error-card { max-width: 720px; margin-left: auto; margin-right: auto; }
+
+  .links-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .links-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #334155;
+  }
+
+  .stats {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.8rem;
+    color: #94a3b8;
+  }
+
+  .stat-num { font-weight: 700; color: #f8fafc; }
+  .stat-num.checked { color: #22c55e; }
+  .stat-num.broken { color: #ef4444; }
+  .stat-num.external { color: #3b82f6; }
+  .stat-divider { color: #334155; }
+
+  .links-note {
+    font-size: 0.7rem;
+    color: #64748b;
+    margin-top: 0.375rem;
+  }
+
+  .links-table-header {
+    display: grid;
+    grid-template-columns: 60px 1fr 2fr 50px;
+    gap: 0.75rem;
+    padding: 0.625rem 1.25rem;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    border-bottom: 1px solid #334155;
+  }
+
+  .link-row {
+    display: grid;
+    grid-template-columns: 60px 1fr 2fr 50px;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.5rem 1.25rem;
+    border-top: 1px solid rgba(51, 65, 85, 0.3);
+    font-size: 0.8rem;
+  }
+
+  .link-row.is-broken {
+    background: rgba(239, 68, 68, 0.05);
+  }
+
+  .status-badge {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    text-align: center;
+  }
+
+  .status-badge.ok {
+    color: #22c55e;
+    background: rgba(34, 197, 94, 0.1);
+  }
+
+  .status-badge.fail {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+  }
+
+  .link-text {
+    color: #f8fafc;
+    font-size: 0.8rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .link-href {
+    color: #94a3b8;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.7rem;
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .link-href:hover { color: #22c55e; text-decoration: underline; }
+
+  .type-badge {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-align: center;
+    color: #94a3b8;
+  }
+
+  .type-badge.external { color: #3b82f6; }
+
+  /* Skeleton */
+  .skeleton-text {
+    height: 1rem;
+    border-radius: 6px;
+    background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+
+  @media (max-width: 640px) {
+    .links-table-header { display: none; }
+
+    .link-row {
+      grid-template-columns: 50px 1fr 40px;
+      gap: 0.375rem;
+    }
+
+    .col-url {
+      grid-column: 1 / -1;
+    }
+  }
+</style>
