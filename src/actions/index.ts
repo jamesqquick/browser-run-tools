@@ -61,6 +61,49 @@ export const server = {
     },
   }),
 
+  summarizeHomepage: defineAction({
+    accept: 'form',
+    input: z.object({
+      url: z.url('Please enter a valid URL (e.g. https://example.com)'),
+    }),
+    handler: async ({ url }) => {
+      const browser = await puppeteer.launch(env.MYBROWSER);
+      try {
+        const page = await browser.newPage();
+        await page.setViewport({ width: 1280, height: 720 });
+        await page.goto(url, { waitUntil: 'networkidle0', timeout: 30_000 });
+
+        const visibleText = await page.evaluate(() => {
+          return document.body.innerText;
+        });
+
+        // Truncate to ~6000 chars to stay within model context limits
+        const truncated = visibleText.slice(0, 6000);
+
+        const response = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are a homepage messaging analyst. Given the visible text content of a website homepage, write a concise summary (3-5 sentences) of what the homepage communicates to a first-time visitor. Focus on: what the company/product does, who it is for, and the main value proposition. Be objective and direct. Do not include any preamble, introduction, or meta-commentary. Start directly with the summary itself.',
+            },
+            {
+              role: 'user',
+              content: `Here is the visible text from the homepage at ${url}:\n\n${truncated}`,
+            },
+          ],
+        });
+
+        const summary =
+          'response' in response ? response.response : String(response);
+
+        return { summary, url };
+      } finally {
+        await browser.close();
+      }
+    },
+  }),
+
   extractOg: defineAction({
     accept: 'form',
     input: z.object({
