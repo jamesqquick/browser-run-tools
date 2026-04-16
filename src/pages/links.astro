@@ -9,10 +9,16 @@ const inputUrl = result?.data?.url ?? "";
 
 <Layout title="Link Checker - Browser Run Tools" maxWidth="900px">
   <div class="hero">
-    <a class="badge" href="https://developers.cloudflare.com/browser-run/" target="_blank" rel="noopener noreferrer">Powered by Cloudflare Browser Run</a>
+    <a
+      class="badge"
+      href="https://developers.cloudflare.com/browser-run/"
+      target="_blank"
+      rel="noopener noreferrer">Powered by Cloudflare Browser Run</a
+    >
     <h1>Link Checker</h1>
     <p class="subtitle">
-      Find and validate every link on a page — identify broken links, external links, and redirects.
+      Find and validate the first 50 links on a page — identify broken links,
+      external links, and redirects.
     </p>
   </div>
 
@@ -30,83 +36,143 @@ const inputUrl = result?.data?.url ?? "";
       />
       <button type="submit" id="submit-btn">
         <span class="btn-text">Check Links</span>
-        <svg class="btn-spinner hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-7.07l-2.83 2.83M9.76 14.24l-2.83 2.83m12.14 0l-2.83-2.83M9.76 9.76L6.93 6.93"/>
+        <svg
+          class="btn-spinner hidden"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path
+            d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-7.07l-2.83 2.83M9.76 14.24l-2.83 2.83m12.14 0l-2.83-2.83M9.76 9.76L6.93 6.93"
+          ></path>
         </svg>
       </button>
     </div>
   </form>
 
-  {result?.error && (
-    <div class="error-card">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"/>
-        <line x1="15" y1="9" x2="9" y2="15"/>
-        <line x1="9" y1="9" x2="15" y2="15"/>
-      </svg>
-      <p>Failed to check links. Make sure the URL is correct and the site is publicly accessible.</p>
-    </div>
-  )}
+  {
+    result?.error && (
+      <div class="error-card">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <line x1="15" y1="9" x2="9" y2="15" />
+          <line x1="9" y1="9" x2="15" y2="15" />
+        </svg>
+        <p>
+          Failed to check links. Make sure the URL is correct and the site is
+          publicly accessible.
+        </p>
+      </div>
+    )
+  }
 
   <div class="links-card hidden" id="skeleton-card">
     <div class="links-header">
       <div class="skeleton-text" style="width: 60%; height: 1rem;"></div>
     </div>
-    {Array.from({ length: 6 }).map(() => (
-      <div class="link-row">
-        <div class="skeleton-text" style="width: 20%; height: 0.85rem;"></div>
-        <div class="skeleton-text" style="width: 70%; height: 0.85rem;"></div>
-        <div class="skeleton-text" style="width: 10%; height: 0.85rem;"></div>
-      </div>
-    ))}
+    {
+      Array.from({ length: 6 }).map(() => (
+        <div class="link-row">
+          <div class="skeleton-text" style="width: 20%; height: 0.85rem;" />
+          <div class="skeleton-text" style="width: 70%; height: 0.85rem;" />
+          <div class="skeleton-text" style="width: 10%; height: 0.85rem;" />
+        </div>
+      ))
+    }
   </div>
 
-  {result?.data && (
-    <div class="links-card">
-      <div class="links-header">
-        <div class="stats">
-          <span class="stat">
-            <span class="stat-num">{result.data.totalLinks}</span> total
-          </span>
-          <span class="stat-divider">|</span>
-          <span class="stat">
-            <span class="stat-num checked">{result.data.checkedCount}</span> checked
-          </span>
-          <span class="stat-divider">|</span>
-          <span class="stat">
-            <span class:list={["stat-num", { broken: result.data.brokenCount > 0 }]}>{result.data.brokenCount}</span> broken
-          </span>
-          <span class="stat-divider">|</span>
-          <span class="stat">
-            <span class="stat-num external">{result.data.externalCount}</span> external
-          </span>
+  {
+    result?.data && (
+      <div class="links-card">
+        <div class="links-header">
+          <div class="stats">
+            <span class="stat">
+              <span class="stat-num">{result.data.totalLinks}</span> total
+            </span>
+            <span class="stat-divider">|</span>
+            <span class="stat">
+              <span class="stat-num checked">{result.data.checkedCount}</span>{" "}
+              checked
+            </span>
+            <span class="stat-divider">|</span>
+            <span class="stat">
+              <span
+                class:list={[
+                  "stat-num",
+                  { broken: result.data.brokenCount > 0 },
+                ]}
+              >
+                {result.data.brokenCount}
+              </span>{" "}
+              broken
+            </span>
+            <span class="stat-divider">|</span>
+            <span class="stat">
+              <span class="stat-num external">{result.data.externalCount}</span>{" "}
+              external
+            </span>
+          </div>
+          {result.data.totalLinks > result.data.checkedCount && (
+            <div class="links-note">
+              Showing first {result.data.checkedCount} of{" "}
+              {result.data.totalLinks} links
+            </div>
+          )}
         </div>
-        {result.data.totalLinks > result.data.checkedCount && (
-          <div class="links-note">Showing first {result.data.checkedCount} of {result.data.totalLinks} links</div>
-        )}
-      </div>
 
-      <div class="links-table-header">
-        <span class="col-status">Status</span>
-        <span class="col-text">Link Text</span>
-        <span class="col-url">URL</span>
-        <span class="col-type">Type</span>
-      </div>
-
-      {result.data.links.map((link) => (
-        <div class:list={["link-row", { "is-broken": !link.ok }]}>
-          <span class:list={["col-status", "status-badge", { ok: link.ok, fail: !link.ok }]}>
-            {link.status || "ERR"}
-          </span>
-          <span class="col-text link-text">{link.text}</span>
-          <a class="col-url link-href" href={link.href} target="_blank" rel="noopener noreferrer">{link.href}</a>
-          <span class:list={["col-type", "type-badge", { external: link.isExternal }]}>
-            {link.isExternal ? "ext" : "int"}
-          </span>
+        <div class="links-table-header">
+          <span class="col-status">Status</span>
+          <span class="col-text">Link Text</span>
+          <span class="col-url">URL</span>
+          <span class="col-type">Type</span>
         </div>
-      ))}
-    </div>
-  )}
+
+        {result.data.links.map((link) => (
+          <div class:list={["link-row", { "is-broken": !link.ok }]}>
+            <span
+              class:list={[
+                "col-status",
+                "status-badge",
+                { ok: link.ok, fail: !link.ok },
+              ]}
+            >
+              {link.status || "ERR"}
+            </span>
+            <span class="col-text link-text">{link.text}</span>
+            <a
+              class="col-url link-href"
+              href={link.href}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {link.href}
+            </a>
+            <span
+              class:list={[
+                "col-type",
+                "type-badge",
+                { external: link.isExternal },
+              ]}
+            >
+              {link.isExternal ? "ext" : "int"}
+            </span>
+          </div>
+        ))}
+      </div>
+    )
+  }
 </Layout>
 
 <script>
@@ -125,8 +191,16 @@ const inputUrl = result?.data?.url ?? "";
 </script>
 
 <style>
-  form { max-width: 720px; margin-left: auto; margin-right: auto; }
-  .error-card { max-width: 720px; margin-left: auto; margin-right: auto; }
+  form {
+    max-width: 720px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .error-card {
+    max-width: 720px;
+    margin-left: auto;
+    margin-right: auto;
+  }
 
   .links-card {
     background: #1e293b;
@@ -149,11 +223,22 @@ const inputUrl = result?.data?.url ?? "";
     color: #94a3b8;
   }
 
-  .stat-num { font-weight: 700; color: #f8fafc; }
-  .stat-num.checked { color: #22c55e; }
-  .stat-num.broken { color: #ef4444; }
-  .stat-num.external { color: #3b82f6; }
-  .stat-divider { color: #334155; }
+  .stat-num {
+    font-weight: 700;
+    color: #f8fafc;
+  }
+  .stat-num.checked {
+    color: #22c55e;
+  }
+  .stat-num.broken {
+    color: #ef4444;
+  }
+  .stat-num.external {
+    color: #3b82f6;
+  }
+  .stat-divider {
+    color: #334155;
+  }
 
   .links-note {
     font-size: 0.7rem;
@@ -226,7 +311,10 @@ const inputUrl = result?.data?.url ?? "";
     white-space: nowrap;
   }
 
-  .link-href:hover { color: #22c55e; text-decoration: underline; }
+  .link-href:hover {
+    color: #22c55e;
+    text-decoration: underline;
+  }
 
   .type-badge {
     font-family: "JetBrains Mono", monospace;
@@ -236,7 +324,9 @@ const inputUrl = result?.data?.url ?? "";
     color: #94a3b8;
   }
 
-  .type-badge.external { color: #3b82f6; }
+  .type-badge.external {
+    color: #3b82f6;
+  }
 
   /* Skeleton */
   .skeleton-text {
@@ -248,7 +338,9 @@ const inputUrl = result?.data?.url ?? "";
   }
 
   @media (max-width: 640px) {
-    .links-table-header { display: none; }
+    .links-table-header {
+      display: none;
+    }
 
     .link-row {
       grid-template-columns: 50px 1fr 40px;
