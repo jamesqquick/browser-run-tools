@@ -3,8 +3,6 @@ import { z } from 'astro/zod';
 import puppeteer from '@cloudflare/puppeteer';
 import { env } from 'cloudflare:workers';
 
-const browser = env.BROWSER as BrowserRun;
-
 export const server = {
   takeScreenshot: defineAction({
     accept: 'form',
@@ -12,7 +10,7 @@ export const server = {
       url: z.url('Please enter a valid URL (e.g. https://example.com)'),
     }),
     handler: async ({ url }) => {
-      const res = await browser.quickAction('screenshot', {
+      const res = await (env.BROWSER as BrowserRun).quickAction('screenshot', {
         url,
         viewport: { width: 1280, height: 720 },
         gotoOptions: { waitUntil: 'networkidle0', timeout: 30_000 },
@@ -29,7 +27,7 @@ export const server = {
       url: z.url('Please enter a valid URL (e.g. https://example.com)'),
     }),
     handler: async ({ url }) => {
-      const res = await browser.quickAction('screenshot', {
+      const res = await (env.BROWSER as BrowserRun).quickAction('screenshot', {
         url,
         screenshotOptions: { fullPage: true },
         viewport: { width: 1280, height: 720 },
@@ -84,7 +82,7 @@ export const server = {
       url: z.url('Please enter a valid URL (e.g. https://example.com)'),
     }),
     handler: async ({ url }) => {
-      const res = await browser.quickAction('json', {
+      const res = await (env.BROWSER as BrowserRun).quickAction('json', {
         url,
         prompt:
           'Write a concise summary (3-5 sentences) of what this homepage communicates to a first-time visitor. Focus on: what the company/product does, who it is for, and the main value proposition. Be objective and direct. Start directly with the summary itself.',
@@ -367,7 +365,7 @@ export const server = {
       url: z.url('Please enter a valid URL (e.g. https://example.com)'),
     }),
     handler: async ({ url }) => {
-      const res = await browser.quickAction('links', {
+      const res = await (env.BROWSER as BrowserRun).quickAction('links', {
         url,
         gotoOptions: { waitUntil: 'networkidle0', timeout: 30_000 },
       });
