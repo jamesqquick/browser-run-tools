@@ -3,6 +3,8 @@ import { z } from 'astro/zod';
 import puppeteer from '@cloudflare/puppeteer';
 import { env } from 'cloudflare:workers';
 
+const browser = env.BROWSER as BrowserRun;
+
 export const server = {
   takeScreenshot: defineAction({
     accept: 'form',
@@ -10,17 +12,14 @@ export const server = {
       url: z.url('Please enter a valid URL (e.g. https://example.com)'),
     }),
     handler: async ({ url }) => {
-      const browser = await puppeteer.launch(env.MYBROWSER);
-      try {
-        const page = await browser.newPage();
-        await page.setViewport({ width: 1280, height: 720 });
-        await page.goto(url, { waitUntil: 'networkidle0', timeout: 30_000 });
-        const screenshot = (await page.screenshot({ type: 'png' })) as Buffer;
-        const base64 = screenshot.toString('base64');
-        return { image: base64, url };
-      } finally {
-        await browser.close();
-      }
+      const res = await browser.quickAction('screenshot', {
+        url,
+        viewport: { width: 1280, height: 720 },
+        gotoOptions: { waitUntil: 'networkidle0', timeout: 30_000 },
+      });
+      const buffer = Buffer.from(await res.arrayBuffer());
+      const base64 = buffer.toString('base64');
+      return { image: base64, url };
     },
   }),
 
@@ -30,20 +29,15 @@ export const server = {
       url: z.url('Please enter a valid URL (e.g. https://example.com)'),
     }),
     handler: async ({ url }) => {
-      const browser = await puppeteer.launch(env.MYBROWSER);
-      try {
-        const page = await browser.newPage();
-        await page.setViewport({ width: 1280, height: 720 });
-        await page.goto(url, { waitUntil: 'networkidle0', timeout: 30_000 });
-        const screenshot = (await page.screenshot({
-          type: 'png',
-          fullPage: true,
-        })) as Buffer;
-        const base64 = screenshot.toString('base64');
-        return { image: base64, url };
-      } finally {
-        await browser.close();
-      }
+      const res = await browser.quickAction('screenshot', {
+        url,
+        screenshotOptions: { fullPage: true },
+        viewport: { width: 1280, height: 720 },
+        gotoOptions: { waitUntil: 'networkidle0', timeout: 30_000 },
+      });
+      const buffer = Buffer.from(await res.arrayBuffer());
+      const base64 = buffer.toString('base64');
+      return { image: base64, url };
     },
   }),
 
@@ -53,11 +47,11 @@ export const server = {
       url: z.url('Please enter a valid URL (e.g. https://example.com)'),
     }),
     handler: async ({ url }) => {
-      const browser = await puppeteer.launch(env.MYBROWSER);
+      const puppeteerBrowser = await puppeteer.launch(env.BROWSER);
       try {
         const [mobilePage, desktopPage] = await Promise.all([
-          browser.newPage(),
-          browser.newPage(),
+          puppeteerBrowser.newPage(),
+          puppeteerBrowser.newPage(),
         ]);
 
         await mobilePage.setViewport({ width: 375, height: 812 });
@@ -79,7 +73,7 @@ export const server = {
           url,
         };
       } finally {
-        await browser.close();
+        await puppeteerBrowser.close();
       }
     },
   }),
@@ -90,40 +84,24 @@ export const server = {
       url: z.url('Please enter a valid URL (e.g. https://example.com)'),
     }),
     handler: async ({ url }) => {
-      const browser = await puppeteer.launch(env.MYBROWSER);
-      try {
-        const page = await browser.newPage();
-        await page.setViewport({ width: 1280, height: 720 });
-        await page.goto(url, { waitUntil: 'networkidle0', timeout: 30_000 });
-
-        const visibleText = await page.evaluate(() => {
-          return document.body.innerText;
-        });
-
-        // Truncate to ~6000 chars to stay within model context limits
-        const truncated = visibleText.slice(0, 6000);
-
-        const response = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
-          messages: [
-            {
-              role: 'system',
-              content:
-                'You are a homepage messaging analyst. Given the visible text content of a website homepage, write a concise summary (3-5 sentences) of what the homepage communicates to a first-time visitor. Focus on: what the company/product does, who it is for, and the main value proposition. Be objective and direct. Do not include any preamble, introduction, or meta-commentary. Start directly with the summary itself.',
+      const res = await browser.quickAction('json', {
+        url,
+        prompt:
+          'Write a concise summary (3-5 sentences) of what this homepage communicates to a first-time visitor. Focus on: what the company/product does, who it is for, and the main value proposition. Be objective and direct. Start directly with the summary itself.',
+        response_format: {
+          type: 'json_schema',
+          schema: {
+            type: 'object',
+            properties: {
+              summary: { type: 'string' },
             },
-            {
-              role: 'user',
-              content: `Here is the visible text from the homepage at ${url}:\n\n${truncated}`,
-            },
-          ],
-        });
-
-        const summary =
-          'response' in response ? response.response : String(response);
-
-        return { summary, url };
-      } finally {
-        await browser.close();
-      }
+            required: ['summary'],
+          },
+        },
+        gotoOptions: { waitUntil: 'networkidle0', timeout: 30_000 },
+      });
+      const data = (await res.json()) as { result: { summary: string } };
+      return { summary: data.result.summary, url };
     },
   }),
 
@@ -133,11 +111,11 @@ export const server = {
       url: z.url('Please enter a valid URL (e.g. https://example.com)'),
     }),
     handler: async ({ url }) => {
-      const browser = await puppeteer.launch(env.MYBROWSER);
+      const puppeteerBrowser = await puppeteer.launch(env.BROWSER);
       try {
         const [lightPage, darkPage] = await Promise.all([
-          browser.newPage(),
-          browser.newPage(),
+          puppeteerBrowser.newPage(),
+          puppeteerBrowser.newPage(),
         ]);
 
         await Promise.all([
@@ -170,7 +148,7 @@ export const server = {
           url,
         };
       } finally {
-        await browser.close();
+        await puppeteerBrowser.close();
       }
     },
   }),
@@ -181,7 +159,7 @@ export const server = {
       url: z.url('Please enter a valid URL (e.g. https://example.com)'),
     }),
     handler: async ({ url }) => {
-      const browser = await puppeteer.launch(env.MYBROWSER);
+      const browser = await puppeteer.launch(env.BROWSER);
       try {
         const page = await browser.newPage();
         await page.setViewport({ width: 1280, height: 720 });
@@ -269,7 +247,7 @@ export const server = {
       url: z.url('Please enter a valid URL (e.g. https://example.com)'),
     }),
     handler: async ({ url }) => {
-      const browser = await puppeteer.launch(env.MYBROWSER);
+      const browser = await puppeteer.launch(env.BROWSER);
       try {
         const page = await browser.newPage();
         await page.goto(url, { waitUntil: 'networkidle0', timeout: 30_000 });
@@ -319,7 +297,7 @@ export const server = {
       url: z.url('Please enter a valid URL (e.g. https://example.com)'),
     }),
     handler: async ({ url }) => {
-      const browser = await puppeteer.launch(env.MYBROWSER);
+      const browser = await puppeteer.launch(env.BROWSER);
       try {
         const page = await browser.newPage();
         await page.goto(url, { waitUntil: 'networkidle0', timeout: 30_000 });
@@ -389,81 +367,73 @@ export const server = {
       url: z.url('Please enter a valid URL (e.g. https://example.com)'),
     }),
     handler: async ({ url }) => {
-      const browser = await puppeteer.launch(env.MYBROWSER);
-      try {
-        const page = await browser.newPage();
-        await page.setViewport({ width: 1280, height: 720 });
-        await page.goto(url, { waitUntil: 'networkidle0', timeout: 30_000 });
+      const res = await browser.quickAction('links', {
+        url,
+        gotoOptions: { waitUntil: 'networkidle0', timeout: 30_000 },
+      });
+      const data = (await res.json()) as { result: string[] };
+      const allLinks = data.result.filter(
+        (href) =>
+          !href.startsWith('javascript:') &&
+          !href.startsWith('mailto:') &&
+          !href.startsWith('tel:'),
+      );
 
-        const rawLinks = await page.evaluate(() => {
-          const links: { href: string; text: string }[] = [];
-          const seen = new Set<string>();
-          document.querySelectorAll('a[href]').forEach((el) => {
-            const href = (el as HTMLAnchorElement).href;
-            if (!href || href.startsWith('javascript:') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
-            if (seen.has(href)) return;
-            seen.add(href);
-            const text = (el.textContent || '').trim().slice(0, 80) || '(no text)';
-            links.push({ href, text });
-          });
-          return links;
-        });
+      // Deduplicate
+      const uniqueLinks = [...new Set(allLinks)];
 
-        // Limit to 50 links to avoid timeout
-        const linksToCheck = rawLinks.slice(0, 50);
-        const baseHost = new URL(url).hostname;
+      // Limit to 50 links to avoid timeout
+      const linksToCheck = uniqueLinks.slice(0, 50);
+      const baseHost = new URL(url).hostname;
 
-        const results = await Promise.all(
-          linksToCheck.map(async (link) => {
-            let status = 0;
-            let ok = false;
-            const isExternal = (() => {
-              try {
-                return new URL(link.href).hostname !== baseHost;
-              } catch {
-                return true;
-              }
-            })();
-
+      const results = await Promise.all(
+        linksToCheck.map(async (href) => {
+          let status = 0;
+          let ok = false;
+          const isExternal = (() => {
             try {
-              const res = await fetch(link.href, {
-                method: 'HEAD',
-                redirect: 'follow',
-                signal: AbortSignal.timeout(5000),
-              });
-              status = res.status;
-              ok = res.ok;
+              return new URL(href).hostname !== baseHost;
             } catch {
-              status = 0;
-              ok = false;
+              return true;
             }
+          })();
 
-            return {
-              href: link.href,
-              text: link.text,
-              status,
-              ok,
-              isExternal,
-            };
-          }),
-        );
+          try {
+            const res = await fetch(href, {
+              method: 'HEAD',
+              redirect: 'follow',
+              signal: AbortSignal.timeout(5000),
+            });
+            status = res.status;
+            ok = res.ok;
+          } catch {
+            status = 0;
+            ok = false;
+          }
 
-        const totalLinks = rawLinks.length;
-        const checkedCount = results.length;
-        const brokenCount = results.filter((r) => !r.ok).length;
-        const externalCount = results.filter((r) => r.isExternal).length;
+          return {
+            href,
+            text: href,
+            status,
+            ok,
+            isExternal,
+          };
+        }),
+      );
 
-        return {
-          links: results,
-          totalLinks,
-          checkedCount,
-          brokenCount,
-          externalCount,
-          url,
-        };
-      } finally {
-        await browser.close();
-      }
+      const totalLinks = uniqueLinks.length;
+      const checkedCount = results.length;
+      const brokenCount = results.filter((r) => !r.ok).length;
+      const externalCount = results.filter((r) => r.isExternal).length;
+
+      return {
+        links: results,
+        totalLinks,
+        checkedCount,
+        brokenCount,
+        externalCount,
+        url,
+      };
     },
   }),
 
@@ -473,7 +443,7 @@ export const server = {
       url: z.url('Please enter a valid URL (e.g. https://example.com)'),
     }),
     handler: async ({ url }) => {
-      const browser = await puppeteer.launch(env.MYBROWSER);
+      const browser = await puppeteer.launch(env.BROWSER);
       try {
         const page = await browser.newPage();
         await page.setViewport({ width: 1280, height: 720 });
@@ -535,7 +505,7 @@ export const server = {
       url: z.url('Please enter a valid URL (e.g. https://example.com)'),
     }),
     handler: async ({ url }) => {
-      const browser = await puppeteer.launch(env.MYBROWSER);
+      const browser = await puppeteer.launch(env.BROWSER);
       try {
         const page = await browser.newPage();
         await page.setViewport({ width: 1280, height: 720 });
