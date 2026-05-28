@@ -11,7 +11,8 @@
 		"binding": "ASSETS"
 	},
 	"browser": {
-		"binding": "BROWSER"
+		"binding": "BROWSER",
+		"remote": true
 	},
 	"ai": {
 		"binding": "AI"
