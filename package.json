@@ -22,5 +22,12 @@
   },
   "devDependencies": {
     "@cloudflare/puppeteer": "^1.1.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp",
+      "workerd"
+    ]
   }
 }
