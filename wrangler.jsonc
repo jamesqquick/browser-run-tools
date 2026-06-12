@@ -1,6 +1,6 @@
 {
 	"account_id": "e9bc21da719562a3e45d77de7dd042de",
-	"compatibility_date": "2026-04-15",
+	"compatibility_date": "2026-06-12",
 	"compatibility_flags": [
 		"nodejs_compat"
 	],
@@ -17,6 +17,12 @@
 	"ai": {
 		"binding": "AI"
 	},
+	"kv_namespaces": [
+		{
+			"binding": "SESSION",
+			"id": "4bd984988f70448681bf6079e0aa5f84"
+		}
+	],
 	"observability": {
 		"enabled": true
 	}

@@ -1,0 +1,355 @@
+---
+import { actions } from "astro:actions";
+import Layout from "../layouts/Layout.astro";
+import "../styles/tool.css";
+
+const result = Astro.getActionResult(actions.takeSnapshot);
+const inputUrl = result?.data?.url ?? "";
+const selectedFormats = result?.data?.formats ?? ["content", "screenshot"];
+---
+
+<Layout title="Snapshot - Browser Run Tools" maxWidth="900px">
+  <div class="hero">
+    <a class="badge" href="https://developers.cloudflare.com/browser-run/quick-actions/snapshot/" target="_blank" rel="noopener noreferrer">Powered by Cloudflare Browser Run</a>
+    <h1>Snapshot</h1>
+    <p class="subtitle">
+      Capture multiple representations of any webpage in a single request — HTML content, screenshot, markdown, and accessibility tree.
+    </p>
+  </div>
+
+  <form method="POST" action={actions.takeSnapshot} id="snapshot-form">
+    <div class="input-group">
+      <label for="url-input" class="sr-only">Website URL</label>
+      <input
+        id="url-input"
+        type="url"
+        name="url"
+        placeholder="https://example.com"
+        required
+        value={inputUrl}
+        autocomplete="url"
+      />
+      <button type="submit" id="submit-btn">
+        <span class="btn-text">Take Snapshot</span>
+        <svg class="btn-spinner hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-7.07l-2.83 2.83M9.76 14.24l-2.83 2.83m12.14 0l-2.83-2.83M9.76 9.76L6.93 6.93"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="format-picker" id="format-picker">
+      <p class="format-picker-label">Choose at least 2 formats to return:</p>
+      <div class="format-options">
+        <label class="format-option">
+          <input type="checkbox" name="format-check" value="content" checked={selectedFormats.includes("content")} />
+          <span class="format-label">HTML Content</span>
+        </label>
+        <label class="format-option">
+          <input type="checkbox" name="format-check" value="screenshot" checked={selectedFormats.includes("screenshot")} />
+          <span class="format-label">Screenshot</span>
+        </label>
+        <label class="format-option">
+          <input type="checkbox" name="format-check" value="markdown" checked={selectedFormats.includes("markdown")} />
+          <span class="format-label">Markdown</span>
+        </label>
+        <label class="format-option">
+          <input type="checkbox" name="format-check" value="accessibilityTree" checked={selectedFormats.includes("accessibilityTree")} />
+          <span class="format-label">Accessibility Tree</span>
+        </label>
+      </div>
+      <p class="format-hint hidden" id="format-hint">Select at least 2 formats.</p>
+    </div>
+
+    <input type="hidden" name="formats" id="formats-input" value={selectedFormats.join(",")} />
+  </form>
+
+  {result?.error && (
+    <div class="error-card">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="15" y1="9" x2="9" y2="15"/>
+        <line x1="9" y1="9" x2="15" y2="15"/>
+      </svg>
+      <p>Failed to capture snapshot. Make sure the URL is correct and the site is publicly accessible.</p>
+    </div>
+  )}
+
+  <div class="snapshot-results hidden" id="skeleton-card">
+    <div class="result-card">
+      <div class="result-header">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="7" width="16" height="12" rx="2"/>
+          <rect x="6" y="3" width="16" height="12" rx="2"/>
+        </svg>
+        <span>Capturing snapshot...</span>
+      </div>
+      <div class="result-image">
+        <div class="skeleton"></div>
+      </div>
+    </div>
+  </div>
+
+  {result?.data && (
+    <div class="snapshot-results">
+      {result.data.screenshot && (
+        <div class="result-card" id="screenshot-card">
+          <div class="result-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+            <span>Screenshot</span>
+          </div>
+          <div class="result-image">
+            <div class="skeleton" id="img-skeleton"></div>
+            <img
+              class="hidden"
+              id="screenshot-img"
+              src={`data:image/png;base64,${result.data.screenshot}`}
+              alt={`Screenshot of ${result.data.url}`}
+            />
+          </div>
+        </div>
+      )}
+
+      {result.data.content && (
+        <div class="result-card">
+          <div class="result-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 18 22 12 16 6"/>
+              <polyline points="8 6 2 12 8 18"/>
+            </svg>
+            <span>HTML Content</span>
+          </div>
+          <div class="code-block">
+            <pre><code>{result.data.content}</code></pre>
+          </div>
+        </div>
+      )}
+
+      {result.data.markdown && (
+        <div class="result-card">
+          <div class="result-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+            <span>Markdown</span>
+          </div>
+          <div class="code-block">
+            <pre><code>{result.data.markdown}</code></pre>
+          </div>
+        </div>
+      )}
+
+      {result.data.accessibilityTree && (
+        <div class="result-card">
+          <div class="result-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="4" r="2"/>
+              <path d="M12 6v6"/>
+              <path d="M6 18l6-6 6 6"/>
+            </svg>
+            <span>Accessibility Tree</span>
+          </div>
+          <div class="code-block">
+            <pre><code>{JSON.stringify(result.data.accessibilityTree, null, 2)}</code></pre>
+          </div>
+        </div>
+      )}
+
+      <div class="snapshot-footer">
+        <a href={result.data.url} target="_blank" rel="noopener noreferrer">{result.data.url}</a>
+      </div>
+    </div>
+  )}
+</Layout>
+
+<script>
+  const form = document.getElementById("snapshot-form") as HTMLFormElement;
+  const btn = document.getElementById("submit-btn") as HTMLButtonElement;
+  const btnText = btn.querySelector(".btn-text") as HTMLSpanElement;
+  const btnSpinner = btn.querySelector(".btn-spinner") as SVGElement;
+  const skeletonCard = document.getElementById("skeleton-card");
+
+  const checkboxes = document.querySelectorAll<HTMLInputElement>('input[name="format-check"]');
+  const formatsInput = document.getElementById("formats-input") as HTMLInputElement;
+  const hint = document.getElementById("format-hint") as HTMLParagraphElement;
+
+  function getSelected(): string[] {
+    return Array.from(checkboxes).filter((cb) => cb.checked).map((cb) => cb.value);
+  }
+
+  function syncFormats() {
+    const selected = getSelected();
+    formatsInput.value = selected.join(",");
+    const valid = selected.length >= 2;
+    btn.disabled = !valid;
+    hint.classList.toggle("hidden", valid);
+  }
+
+  checkboxes.forEach((cb) => cb.addEventListener("change", syncFormats));
+  syncFormats();
+
+  form.addEventListener("submit", (e) => {
+    const selected = getSelected();
+    if (selected.length < 2) {
+      e.preventDefault();
+      return;
+    }
+    formatsInput.value = selected.join(",");
+    btn.disabled = true;
+    btnText.textContent = "Capturing...";
+    btnSpinner.classList.remove("hidden");
+    skeletonCard?.classList.remove("hidden");
+  });
+
+  // Progressive image reveal
+  const img = document.getElementById("screenshot-img") as HTMLImageElement | null;
+  const imgSkeleton = document.getElementById("img-skeleton");
+
+  if (img) {
+    const reveal = () => {
+      imgSkeleton?.remove();
+      img.classList.remove("hidden");
+    };
+    if (img.complete) {
+      reveal();
+    } else {
+      img.addEventListener("load", reveal);
+      img.addEventListener("error", reveal);
+    }
+  }
+</script>
+
+<style>
+  /* Format Picker */
+  .format-picker {
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-top: 1rem;
+    margin-bottom: 2rem;
+    background: #1e293b;
+  }
+
+  .format-picker-label {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #94a3b8;
+    margin: 0 0 0.75rem 0;
+  }
+
+  .format-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .format-option {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    transition: border-color 200ms, background 200ms;
+  }
+
+  .format-option:hover {
+    border-color: #475569;
+    background: rgba(34, 197, 94, 0.05);
+  }
+
+  .format-option:has(input:checked) {
+    border-color: #22c55e;
+    background: rgba(34, 197, 94, 0.1);
+  }
+
+  .format-option input[type="checkbox"] {
+    accent-color: #22c55e;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+
+  .format-label {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #cbd5e1;
+    user-select: none;
+  }
+
+  .format-hint {
+    margin-top: 0.625rem;
+    margin-bottom: 0;
+    font-size: 0.8rem;
+    color: #ef4444;
+  }
+
+  /* Snapshot Results */
+  .snapshot-results {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  /* Code Block */
+  .code-block {
+    padding: 0.5rem;
+  }
+
+  .code-block pre {
+    margin: 0;
+    padding: 1rem;
+    background: #0f172a;
+    border-radius: 8px;
+    overflow-x: auto;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  .code-block code {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: #94a3b8;
+    white-space: pre;
+  }
+
+  /* Footer */
+  .snapshot-footer {
+    padding: 0.75rem 1.25rem;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    text-align: center;
+  }
+
+  .snapshot-footer a {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.8rem;
+    color: #22c55e;
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .snapshot-footer a:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 640px) {
+    .format-options {
+      flex-direction: column;
+    }
+  }
+</style>
