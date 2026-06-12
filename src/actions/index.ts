@@ -9,6 +9,7 @@ import { auditMeta } from './auditMeta';
 import { checkLinks } from './checkLinks';
 import { extractFonts } from './extractFonts';
 import { measurePerformance } from './measurePerformance';
+import { takeSnapshot } from './takeSnapshot';
 
 export const server = {
   takeScreenshot,
@@ -22,4 +23,5 @@ export const server = {
   checkLinks,
   extractFonts,
   measurePerformance,
+  takeSnapshot,
 };

@@ -72,4 +72,10 @@ export const tools: Tool[] = [
     description: "Measure TTFB, LCP, load times, and resource breakdown.",
     icon: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>`,
   },
+  {
+    href: "/snapshot",
+    label: "Snapshot",
+    description: "Capture multiple page representations — HTML, screenshot, markdown, and accessibility tree — in one request.",
+    icon: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="16" height="12" rx="2"/><rect x="6" y="3" width="16" height="12" rx="2"/></svg>`,
+  },
 ];
